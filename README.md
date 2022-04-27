@@ -1,13 +1,68 @@
-# Домашнее задание к уроку 2 - Docker
+# Домашнее задание для к уроку 3 - Введение в Kubernetes
 
-Напишите Dockerfile к любому приложению из директорий golang или python на ваш выбор (можно к обоим).
+Cоздайте namespace kubedoom
+```
+kubectl create ns kubedoom
+```
 
-Образ должен собираться из официального базового образа для выбранного языка. На этапе сборки должны устанавливаться все необходимые зависимости, а так же присутствовать команда для запуска приложения.
+Напишите deployment для запуска игры **Kube DOOM**.
 
-Старайтесь следовать рекомендациям (Best Practices) из лекции при написании Dockerfile.
+Приложение должно запускаться из образа
+```
+storaxdev/kubedoom:0.5.0
+```
+Должен быть описан порт:
+```
+5900 TCP
+```
+Для указания протокола используется поле protocol в описании порта.
 
-При запуске контейнера из образа с указанием проксирования порта (флаг -p или -P если указан EXPOSE) при обращении
-на localhost:port должно быть доступно приложение в контейнере (оно отвечает Hello, World!).
+В деплойменте должна быть одна реплика, при этом при обновлении образа не должно одновременно работать две реплики (см. **maxSurge** и **maxUnavailable** из лекции).
 
-Сохраните получившийся Dockerfile в любом публичном Git репозитории, например GitHub, и пришлите ссылку на репозиторий.
-# geekbrains-conteinerization
+Добавьте в шаблон контейнера параметры
+```
+hostNetwork: true
+serviceAccountName: kubedoom
+```
+
+Запустите получившийся деплоймент в кластере Kubernetes в **namespace kubedoom**.
+Pod не должен самопроизвольно рестартовать.
+
+В случае возникновения проблем смотрите в описание Pod, ReplicaSet, Deployment.
+Например:
+```
+kubectl describe pod <pod name>
+kubectl logs pod <pod name>
+```
+
+Разверните в кластере манифест:
+```
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubedoom
+  namespace: kubedoom
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubedoom
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: kubedoom
+    namespace: kubedoom
+```
+
+Этот манифест создаст в кластере сервисную учетную запись и даст ей права Cluster-admin
+
+Для подключения к игре вам нужно выполнить **kubectl portforward** и используйте VNC клиент.
+Подробнее о KubeDoom читайте по ссылке:
+https://github.com/storax/kubedoom
+
+Сохраните манифесты в любом публичном Git репозитории, например GitHub, и пришлите ссылку на репозиторий.
+
+Желаю удачи!
